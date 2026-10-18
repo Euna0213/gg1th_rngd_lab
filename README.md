@@ -11,7 +11,7 @@ https://developer.furiosa.ai/latest/en/get_started/furiosa_llm.html
 | 항목 | 버전 / 내용 |
 |---|---|
 | NPU | FuriosaAI RNGD |
-| OS | Ubuntu (Linux 6.8) |
+| OS | Ubuntu 22.04 (Linux 6.8) |
 | Python | 3.12 (`.python-version`) |
 | 패키지 관리자 | [uv](https://docs.astral.sh/uv/) 0.13 이상 |
 | furiosa-llm | v2026.4.0 |
