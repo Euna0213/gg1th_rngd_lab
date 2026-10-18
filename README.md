@@ -2,7 +2,8 @@
 
 FuriosaAI **RNGD** NPU 실습 저장소입니다.
 이 문서는 실습을 시작하기 전에 필요한 **환경 셋팅** 절차를 다룹니다.
-
+https://furiosa.ai/rngd
+https://developer.furiosa.ai/latest/en/get_started/furiosa_llm.html
 ---
 
 ## 1. 실습 환경
