@@ -1,5 +1,9 @@
 # DAY 3 실습: RNGD LLM Serving과 Python 챗봇
 
+## 실습 내용
+![실습 내용](day3실습.png)
+
+
 ## 목적과 실행 위치
 
 DAY 2의 `LLM.chat()`은 Python 프로세스가 모델을 직접 로딩했다. 오늘은 Linux 서버 프로세스가 조별 RNGD 카드에 모델을 한 번 올리고, Windows Python 클라이언트가 HTTP API로 질문한다. 각 조는 카드 1개와 SSH 계정 1개를 공유한다. 서버를 두 번 띄우지 않는다.
@@ -14,7 +18,7 @@ DAY 2의 `LLM.chat()`은 Python 프로세스가 모델을 직접 로딩했다. �
 | `requirements.txt` | Windows PC | OpenAI SDK와 dotenv 설치 |
 | `.env.example` | Linux/Windows 각각 복사 | 장치·포트·API URL 설정 예시 |
 
-## 강사 사전 준비
+## 사전 준비
 
 1. DAY 1 배정표의 Device/PCI-BDF와 `furiosa-smi info/status/ps`를 대조한다. 각 조에 **독립 카드 1개와 겹치지 않는 서버 포트 1개**를 배정한다.
 2. DAY 2의 Python 추론 및 다른 Serving 프로세스가 조별 카드를 점유하지 않는지 확인한다.
@@ -66,24 +70,19 @@ furiosa-smi ps
 Windows의 `127.0.0.1`은 Windows PC 자신이다. Linux 서버의 `127.0.0.1`에 직접 연결되지 않는다. 별도 **Windows PowerShell 터미널 C**에서 포트 포워딩을 유지한다.
 
 ```powershell
-ssh -N -L 18103:127.0.0.1:18103 사용자명@서버주소
+# ssh -i 자신의ssh_key -p 자산의port -N -L 18103:127.0.0.1:18103 std2@eval.nxt.furiosa.ai
+ssh -i id_rsa_13_tutor -p 36140 -N -L 18103:127.0.0.1:18103 std2@eval.nxt.furiosa.ai
 ```
+![alt text](image.png)
 
 첫 번째 `18103`은 Windows PC에서 열 로컬 포트, 두 번째 `18103`은 Linux 서버에서 실행한 포트다. 자신의 조에 배정된 값으로 둘 다 바꾼다. 서버 SSH 접속 포트가 기본 22가 아니면 강사가 알려준 `-p SSH포트`를 추가한다. 터널 명령은 정상적으로 연결되어도 화면에 계속 머무를 수 있다. 이 터미널을 닫으면 API 연결도 끊긴다. 각자의 Windows PC에서는 같은 로컬 포트를 사용할 수 있지만, **한 PC에서 이미 사용 중인 로컬 포트와는 충돌하면 안 된다**.
 
 Windows PowerShell 터미널 D에서 실습 폴더로 이동해 `.env`를 만들고 `OPENAI_BASE_URL=http://127.0.0.1:18103/v1`을 자신의 로컬 터널 포트에 맞춘다. `OPENAI_API_KEY=EMPTY`는 인증을 사용하지 않는 교육용 서버에서 SDK가 요구하는 자리표시자이며 비밀키가 아니다. 별도 인증이 설정된 환경에서는 강사가 제공한 안전한 방법으로 환경변수를 주입한다.
 
 ```powershell
-cd DAY03_practice
-Copy-Item .env.example .env
-# 편집기로 .env의 OPENAI_BASE_URL과 MODEL_ID를 확인
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python 03_api_client.py
+클로드 도움을 받아서 윈도우 가상환경으로 변경한다.
+uv sync
 ```
-
-PowerShell 정책 때문에 활성화가 막히면 `.\.venv\Scripts\python.exe -m pip install -r requirements.txt`와 `.\.venv\Scripts\python.exe 03_api_client.py`를 사용한다. Windows에서 `curl` 대신 Python 코드의 `models.list()` 결과를 확인해도 된다.
 
 ## 4단계: API와 Streaming 확인
 

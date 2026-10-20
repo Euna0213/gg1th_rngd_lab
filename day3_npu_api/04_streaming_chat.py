@@ -37,11 +37,13 @@ def main() -> None:
             stream=True,
             max_tokens=128,
             temperature=0,
+            # OpenAI SDK 표준 파라미터가 아니므로 extra_body로 전달해야 서버까지 도달한다.
             extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         )
         parts = []
         print("봇> ", end="", flush=True)
         for chunk in stream:
+            # 일부 chunk는 choices가 빈 keep-alive성 조각이라 건너뛴다.
             if not chunk.choices:
                 continue
             piece = chunk.choices[0].delta.content or ""
