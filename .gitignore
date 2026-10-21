@@ -1,4 +1,7 @@
 output_/
+day4_fxb_ex/artifacts/
+day4_fxb_ex/Furiosa_FXB_CLI_실습_강사용.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

@@ -1,0 +1,12 @@
+USER=std2
+HOME=/home/std2
+HF_HOME=<default>
+HF_HUB_CACHE=<default>
+XDG_CACHE_HOME=<default>
+/usr/local/bin/fxb
+/usr/local/bin/furiosa-llm
++------+--------+-------------------+---------+---------+--------------+
+| Arch | Device | Firmware          | Temp.   | Power   | PCI-BDF      |
++------+--------+-------------------+---------+---------+--------------+
+| rngd | npu7   | 2026.4.0, 93d67f3 | 34.65°C | 38.00 W | 0000:c4:00.0 |
++------+--------+-------------------+---------+---------+--------------+

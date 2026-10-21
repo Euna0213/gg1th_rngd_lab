@@ -1,0 +1,6 @@
+REPO ID                                            ARCH              SIZE       FuriosaIR                FURIOSA-LLM                FXB FILE
+-------------------------------------------------  ----------------  ---------  -----------------------  -------------------------  ----------------------------------------------------
+furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic  LlamaForCausalLM  331.5 MiB  0.11.0-dev (fc43f6a779)  2026.4.0-rc.0 (c03e58497)  llama3-1-8b-fp8-fc43f6a779-c03e584974-2609100218.fxb
+furiosa-ai/Qwen3-8B-FP8                            Qwen3ForCausalLM  659.1 MiB  0.11.0-dev (fc43f6a779)  2026.4.0-rc.0 (c03e58497)  qwen3-8b-fp8-fc43f6a779-c03e584974-2609100217.fxb
+
+2 file(s), 990.7 MiB

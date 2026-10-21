@@ -3,10 +3,10 @@
 ### FXB란?
 Furiosa Executable Bundle을 생성·다운로드·관리하는 CLI 도구
 ### FXB의 역할과 전체 구조
-![alt text](image-1.png)
+![alt text](images/image-1.png)
 
 ### 파인튜닝 모델에 FXB를 재사용하는 방법
-![alt text](image-2.png)
+![alt text](images/image-2.png)
 기존 모델과 파인튜닝 모델의 아키텍처 및 커널 생성 관련 config.json 값이 같다면 기존 FXB를 재사용할 수 있다. 반대로 아키텍처, attention 설정, quantization format 등 fingerprint에 영향을 주는 구성이 바뀌면 새 FXB 컴파일이 필요하다.
 
 특히 모델을 BF16에서 FP8로 변경했다면 동일한 FXB를 그대로 재사용할 수 있다고 가정해서는 안 된다. 양자화 형식은 호환성 판정 요소에 포함된다.
@@ -16,7 +16,7 @@ Furiosa Executable Bundle을 생성·다운로드·관리하는 CLI 도구
 
 > **대상**: Hugging Face 모델, Linux CLI, LLM 추론 서버의 기초 개념을 이해한 학습자
 
-![alt text](image.png)
+![alt text](images/image.png)
 
 ## 1. 학습 목표와 완료 기준
 
@@ -57,7 +57,7 @@ flowchart TD
 
 ---
 
-## 3. 강의 운영 및 계정 권한
+## 3. 실습 환경 및 계정 권한
 
 | 역할 | 작업 범위 |
 |---|---|
@@ -65,13 +65,13 @@ flowchart TD
 | 학생 계정(`std1`, `std2` 등) | 본인 홈의 실습 파일·가상환경·FXB 캐시 조작, 배정된 RNGD 사용 |
 | 조별 운영 규칙 | **하나의 RNGD를 동시에 여러 모델 서빙 프로세스에서 점유하지 않음**. 한 조의 두 학습자는 실행자·검증자 역할을 교대 |
 
-> `sudo` 없이 수행 가능한 명령을 기본 실습에 배치한다. 컴파일용 AArch64 크로스 컴파일러 설치는 관리자만 수행한다. 공유 서버에서 `fxb cache rm --all`을 실제로 실행하지 않는다.
+> 기본 실습은 `sudo` 없이 수행할 수 있다. 컴파일용 AArch64 크로스 컴파일러 설치는 관리자만 수행한다. 공유 서버에서 `fxb cache rm --all`을 실제로 실행하지 않는다.
 
 ### 3.1 권장 프로젝트 디렉터리
 
 ```text
-~/rngd-fxb-lab/
-├── README.md                   # 강의용 요약·작업 기록(선택)
+~/day4_fxb_ex/
+├── Furiosa_FXB_CLI_실습.md       # 실습 요약·작업 기록(선택)
 ├── logs/
 │   ├── environment.txt
 │   ├── cache_before.txt
@@ -93,8 +93,8 @@ flowchart TD
 **디렉터리 생성**
 
 ```bash
-mkdir -p ~/rngd-fxb-lab/{logs,reports,artifacts,scripts}
-cd ~/rngd-fxb-lab
+mkdir -p ~/rngd-lab/day4_fxb_ex/{logs,reports,artifacts,scripts}
+cd ~/rngd-lab/day4_fxb_ex
 pwd
 ```
 
@@ -122,7 +122,7 @@ fxb --help
 ### 실습 4-2. 설치된 Furiosa-LLM 버전 확인
 
 ```bash
-python -m pip show furiosa-llm 2>/dev/null || true
+uv run python -m pip show furiosa-llm 2>/dev/null || true
 uv run python -c 'import importlib.metadata as m; print(m.version("furiosa-llm"))'
 ```
 
@@ -156,19 +156,17 @@ fxb --help
 ## 5. 기초 실습: FXB 캐시 조회 (10분)
 
 ### 실습 5-1. 캐시 목록 조회
-
+- FXB 캐시 목록을 화면에 출력하면서, 동시에 그 결과를 파일에도 저장
 ```bash
 fxb cache ls | tee logs/cache_before.txt
 ```
 
-파일 경로만 필요하면:
-
+- 파일 경로만 필요하면:
 ```bash
 fxb cache ls --quiet
 ```
 
-기본 캐시 디렉터리 확인:
-
+- 기본 캐시 디렉터리 확인:
 ```bash
 ls -ld ~/.cache/furiosa/llm/fxb 2>/dev/null || true
 ```
@@ -176,12 +174,20 @@ ls -ld ~/.cache/furiosa/llm/fxb 2>/dev/null || true
 **해석 항목:** REPO ID, ARCH(모델 아키텍처), SIZE, FuriosaIR, FURIOSA-LLM, FXB FILE. 빈 캐시는 오류가 아니라 다운로드 이전 상태일 수 있다.
 
 ### 실습 5-2. 모델 캐시와 FXB 캐시 비교
-
+- 허깅페이스 hub에 등록 되어 있는 furiosa 모델 확인
+```
+uv run hf_fxb_list.py
+```
+- Hugging Face 모델 다운 받기
+```
+hf download RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic
+```
+- Hugging Face CLI가 있다면 모델 캐시를 별도로 조회
 ```bash
-# Hugging Face CLI가 있다면 모델 캐시를 별도로 조회
 hf cache ls 2>/dev/null || echo 'hf CLI가 없거나 캐시 조회 불가'
-
-# FXB 캐시
+```
+- FXB 캐시
+```
 fxb cache ls
 ```
 
@@ -189,12 +195,12 @@ fxb cache ls
 
 ---
 
-## 6. 핵심 실습: 공개 FXB 다운로드와 호환성 검증 (20분)
+## 6. 핵심 실습: 공개 FXB 다운로드와 호환성 검증
 
 ### 실습 6-1. 공개 FXB 다운로드
 
 ```bash
-fxb download furiosa-ai/Qwen3-8B-FP8
+fxb download furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic
 ```
 
 이 명령은 저장소에서 `.fxb` 파일을 내려받아 FXB 캐시에 등록한다. **모델의 `.safetensors` 가중치 전체를 받는 명령은 아니다.** 인터넷 접속·Hugging Face 권한·디스크 여유 공간이 필요하다.
@@ -204,8 +210,8 @@ fxb download furiosa-ai/Qwen3-8B-FP8
 ```bash
 fxb download --help
 # 실제 존재하는 파일명을 확인한 경우에만 --file 사용
-# fxb download furiosa-ai/Qwen3-8B-FP8 --file <실제파일명.fxb>
-# fxb download furiosa-ai/Qwen3-8B-FP8 --revision <브랜치또는커밋>
+# fxb download furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic --file <실제파일명.fxb>
+# fxb download furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic --revision <브랜치또는커밋>
 ```
 
 ### 실습 6-2. 다운로드 결과 확인
@@ -217,12 +223,12 @@ fxb cache ls | tee logs/cache_after.txt
 ### 실습 6-3. 원본 모델과 호환성 확인
 
 ```bash
-fxb check Qwen/Qwen3-8B-FP8 | tee logs/compatibility.txt
+fxb check RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic | tee logs/compatibility.txt
 ```
 
 기대 확인 요소:
 
-- 대상 모델 아키텍처(`Qwen3ForCausalLM` 등)가 표시되는가?
+- 대상 모델 아키텍처(`LlamaForCausalLM` 등)가 표시되는가?
 - 호환 FXB의 **추천 경로(Recommended)**가 표시되는가?
 - FuriosaIR 상태가 `match`인가, `stale`인가?
 
@@ -230,7 +236,7 @@ fxb check Qwen/Qwen3-8B-FP8 | tee logs/compatibility.txt
 
 ```bash
 # 성공/실패 코드 관찰
-fxb check Qwen/Qwen3-8B-FP8
+fxb check RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic
 echo "exit_code=$?"
 ```
 
@@ -253,7 +259,7 @@ else
 fi
 ```
 
-캐시에 여러 번들이 있으면 `fxb cache ls --quiet`에서 **Qwen3-8B-FP8과 일치하는 경로**를 직접 선택해야 한다. 첫 번째가 반드시 실습 대상 모델이라는 보장은 없다.
+캐시에 여러 번들이 있으면 `fxb cache ls --quiet`에서 **Meta-Llama-3.1-8B-Instruct-FP8-dynamic과 일치하는 경로**를 직접 선택해야 한다. 첫 번째가 반드시 실습 대상 모델이라는 보장은 없다.
 
 ### 실습 7-2. 번들 메타데이터 표시
 
@@ -288,16 +294,19 @@ head -n 60 logs/bundle_inspect.txt
 서빙 터미널 A:
 
 ```bash
-cd ~/rngd-fxb-lab
-furiosa-llm serve Qwen/Qwen3-8B-FP8 2>&1 | tee logs/serve.log
+cd ~/rngd-lab/day4_fxb_ex
+furiosa-llm serve RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic 2>&1 | tee logs/serve.log
 ```
 
-모델 파일은 Hub에서 읽거나 다운로드하고, 호환 FXB는 모델 저장소 → 로컬 FXB 캐시 등의 규칙에 따라 선택한다. **캐시 자동 탐색은 모델 ID로 호출할 때 적용되며**, 로컬 모델 경로를 사용할 때는 `--fxb` 또는 모델 폴더 내 FXB를 지정한다.
+```bash
+furiosa-llm serve RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic \
+  --fxb /path/to/stale.fxb
+```
 
 명시적 FXB 지정 예:
 
 ```bash
-furiosa-llm serve Qwen/Qwen3-8B-FP8 --fxb /path/to/compatible.fxb
+furiosa-llm serve RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic   --fxb /home/std2/.cache/furiosa/llm/fxb/models--furiosa-ai--Meta-Llama-3.1-8B-Instruct-FP8-dynamic/snapshots/420d37d19a7769215f677f6b1bcfa54b9ad0474d/llama3-1-8b-fp8-fc43f6a779-c03e584974-2609100218.fxb
 ```
 
 캐시에서 `stale`로 표시된 파일을 강제로 지정하는 경우 호환성 및 실제 작동이 보장되지 않으므로 일반 실습에서는 사용하지 않는다.
@@ -314,13 +323,13 @@ curl -fsS http://127.0.0.1:8000/v1/models | python3 -m json.tool
 
 ### 실습 8-3. 채팅 추론 테스트
 
-앞 단계에서 반환된 **실제 모델 ID**가 `Qwen/Qwen3-8B-FP8`인 경우:
+앞 단계에서 반환된 **실제 모델 ID**가 `RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic`인 경우:
 
 ```bash
 curl -fsS http://127.0.0.1:8000/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "Qwen/Qwen3-8B-FP8",
+    "model": "RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic",
     "messages": [
       {"role": "user", "content": "FXB의 역할을 한국어로 두 문장으로 설명해줘."}
     ],
@@ -368,43 +377,88 @@ fxb build --help
 | `--build-report` | 빌드 후 커널별 시간 보고 |
 
 ### 실습 9-2. Dry-run
-
+- Dry-run = 실제로 실행(컴파일/삭제 등)하지 않고, "만약 실행하면 어떻게 될지" 계획/결과만 미리 보여주는 모드임
 ```bash
-cd ~/rngd-fxb-lab
-fxb build Qwen/Qwen3-8B-FP8 ./artifacts/qwen3-8b-fp8 \
+cd ~/rngd-alb/day4_fxb_ex
+fxb build Qwen/Qwen3-4B-FP8 ./artifacts/qwen3-4b-fp8 \
   -tp 8 -pp 1 -O O0 --max-model-len 8192 --dry-run
 ```
 
 `-tp 8`은 RNGD 카드 1개의 8 PE와 연결되는 구성 예시이다. 해당 모델·SDK·장치 조합에 맞지 않는 값이라면 오류가 발생할 수 있다. Dry-run에서 모델 메타데이터와 버킷 계획을 먼저 확인한다.
 
-### 실습 9-3. 실제 FXB 빌드 (선택)
-
+### 실습 9-3. 실제 FXB 빌드 실행 
+- 시간이 만힝 걸림(1시간 30분 이상)
 ```bash
-fxb build Qwen/Qwen3-8B-FP8 ./artifacts/qwen3-8b-fp8 \
+fxb build Qwen/Qwen3-4B-FP8 ./artifacts/qwen3-4b-fp8 \
   -tp 8 -pp 1 -O O0 --max-model-len 8192 \
   --concurrency 2 --build-report
 ```
 
-빌드 성공 시 `Artifact Build Completed` 등의 완료 표시와 `./artifacts/qwen3-8b-fp8.fxb` 생성 여부를 확인한다. `O0`는 빠른 검증용 제한된 버킷 구성으로, 운영용 기본값인 `O3`과 다르다.
+빌드 성공 시 `Artifact Build Completed` 등의 완료 표시와 `./artifacts/qwen3-4b-fp8.fxb` 생성 여부를 확인한다. `O0`는 빠른 검증용 제한된 버킷 구성으로, 운영용 기본값인 `O3`과 다르다.
+
+| Tip : cpu, ram 사용 확인하기
+```
+# 방법1
+sudo apt update
+sudo apt install htop
+htop
+
+# 방법2
+watch -n 1 free -h
+```
+
 
 ### 실습 9-4. 로컬 FXB를 캐시에 등록
 
 ```bash
-fxb show ./artifacts/qwen3-8b-fp8.fxb
-fxb add ./artifacts/qwen3-8b-fp8.fxb
+fxb show ./artifacts/qwen3-4b-fp8.fxb
+fxb add ./artifacts/qwen3-4b-fp8.fxb
 fxb cache ls
-fxb check Qwen/Qwen3-8B-FP8
+fxb check Qwen/Qwen3-4B-FP8
 ```
 
 빌드된 FXB의 fingerprint와 FuriosaIR 리비전이 현재 실행 환경과 일치하는지 확인한다.
 
+### 실습 9-5. Qwen/Qwen3-4B-FP8 npu 서빙하기
+
+서빙 터미널 A:
+
+```bash
+cd ~/rngd-lab/day4_fxb_ex
+furiosa-llm serve Qwen/Qwen3-4B-FP8 2>&1 | tee logs/serve_qwen3-4b.log
+```
+
+실습 9-4에서 `fxb add`로 캐시에 등록한 FXB의 fingerprint와 FuriosaIR 리비전이 현재 실행 환경과 일치(`match`)하면, 모델 ID만으로 호출해도 방금 빌드한 FXB가 자동으로 선택된다. `fxb check Qwen/Qwen3-4B-FP8` 결과가 `stale`이거나 캐시에 동일 모델의 다른 FXB가 섞여 있다면, 직접 빌드한 파일을 명시적으로 지정한다.
+
+```bash
+furiosa-llm serve Qwen/Qwen3-4B-FP8 --fxb ./artifacts/qwen3-4b-fp8.fxb
+```
+
+별도 터미널 B에서 서빙 확인(실습 8-2, 8-3과 동일한 방식):
+
+```bash
+curl -fsS http://127.0.0.1:8000/v1/models | python3 -m json.tool
+
+curl -fsS http://127.0.0.1:8000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "Qwen/Qwen3-4B-FP8",
+    "messages": [
+      {"role": "user", "content": "FXB의 역할을 한국어로 두 문장으로 설명해줘."}
+    ],
+    "max_tokens": 128
+  }' | python3 -m json.tool
+```
+
+`data[].id`가 요청한 `model` 값과 다르면 JSON의 `model`을 그 값으로 맞춘다. 확인이 끝나면 터미널 A에서 `Ctrl+C`로 **직접 실행한 서버만** 종료한다.
+
 ---
 
-## 10. 캐시 정리: 조회와 미리보기 중심 (5분)
+## 10. 캐시 정리: 조회와 미리보기 중심
 
 ```bash
 # 삭제 대상 미리보기
-fxb cache rm furiosa-ai/Qwen3-8B-FP8 --dry-run
+fxb cache rm furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic --dry-run
 
 # 현재 SDK와 비교해 stale인 번들 정리 대상 미리보기
 fxb cache prune --dry-run
@@ -486,25 +540,6 @@ reports/experiment_results.md
 - 파인튜닝 모델의 FXB 재사용 조건:
 ```
 
-### 평가 루브릭 (100점)
-
-| 영역 | 기준 | 점수 |
-|---|---|---:|
-| 환경·캐시 확인 | NPU/CLI 확인 및 다운로드 전후 로그 | 20 |
-| 번들 분석 | 메타데이터·버킷·호환성 해석 정확성 | 30 |
-| 모델 서빙 | 실제 API 정상 응답과 증빙 | 30 |
-| 설명·문제해결 | FXB 개념, 실패 원인 분석, 실습 보고서 | 20 |
-
----
-
-## 13. 강사용 체크포인트
-
-- **시작 전**: 조별 RNGD 배정, 포트 사용 계획, Hub 접근 및 모델 파일·FXB를 다운로드할 디스크 용량 확인.
-- **실습 6 이전**: 대상 모델 `furiosa-ai/Qwen3-8B-FP8`와 `Qwen/Qwen3-8B-FP8`의 접근 가능 여부, SDK 2026.4.0 호환성 재확인.
-- **실습 8 이전**: 조당 하나의 모델 서빙 프로세스만 실행하도록 안내; 모델 첫 로딩 시간은 환경에 따라 달라짐.
-- **심화 실습 이전**: 빌드 도구체인 설치, 충분한 시스템 자원, 실제 컴파일 여부 결정.
-- **마무리**: `fxb cache ls`는 **FXB 목록**, `hf cache ls`는 **Hugging Face Hub 캐시**, `/v1/models`는 **현재 서빙 모델 목록**임을 재확인.
-
 ---
 
 ## 부록 A. `fxb` 명령어 빠른 참조
@@ -548,12 +583,12 @@ mkdir -p logs
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$HOME/rngd-fxb-lab"
+cd "$HOME/rngd-lab/day4_fxb_ex"
 mkdir -p logs
 fxb cache ls | tee logs/cache_before.txt
-fxb download furiosa-ai/Qwen3-8B-FP8
+fxb download furiosa-ai/Meta-Llama-3.1-8B-Instruct-FP8-dynamic
 fxb cache ls | tee logs/cache_after.txt
-fxb check Qwen/Qwen3-8B-FP8 | tee logs/compatibility.txt
+fxb check RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic | tee logs/compatibility.txt
 ```
 
 ### `scripts/03_api_test.sh`
@@ -561,14 +596,14 @@ fxb check Qwen/Qwen3-8B-FP8 | tee logs/compatibility.txt
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$HOME/rngd-fxb-lab"
+cd "$HOME/rngd-lab/day4_fxb_ex"
 mkdir -p reports
 curl -fsS http://127.0.0.1:8000/v1/models \
   | tee reports/models.json \
   | python3 -m json.tool
 
 # MODEL_ID는 models.json의 data[].id와 반드시 일치시킨다.
-MODEL_ID="${MODEL_ID:-Qwen/Qwen3-8B-FP8}"
+MODEL_ID="${MODEL_ID:-RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8-dynamic}"
 MODEL_ID="$MODEL_ID" python3 - <<'PY' > reports/request.json
 import json, os
 print(json.dumps({
