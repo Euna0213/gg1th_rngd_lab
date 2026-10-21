@@ -1,15 +1,17 @@
 # Furiosa FXB CLI 실습 교재
-
-# FXB의 역할과 전체 구조
+##  0. FXB 소개
+### FXB란?
+Furiosa Executable Bundle을 생성·다운로드·관리하는 CLI 도구
+### FXB의 역할과 전체 구조
 ![alt text](image-1.png)
 
-# 파인튜닝 모델에 FXB를 재사용하는 방법
+### 파인튜닝 모델에 FXB를 재사용하는 방법
 ![alt text](image-2.png)
 기존 모델과 파인튜닝 모델의 아키텍처 및 커널 생성 관련 config.json 값이 같다면 기존 FXB를 재사용할 수 있다. 반대로 아키텍처, attention 설정, quantization format 등 fingerprint에 영향을 주는 구성이 바뀌면 새 FXB 컴파일이 필요하다.
 
 특히 모델을 BF16에서 FP8로 변경했다면 동일한 FXB를 그대로 재사용할 수 있다고 가정해서는 안 된다. 양자화 형식은 호환성 판정 요소에 포함된다.
 
-# 실습 환경 
+### 실습 환경 
 > **실습 환경**: Ubuntu Linux · Furiosa RNGD NPU 1개/조 · 학생 2인 1조 · Furiosa SDK 2026.4.0 기준  
 
 > **대상**: Hugging Face 모델, Linux CLI, LLM 추론 서버의 기초 개념을 이해한 학습자
