@@ -130,11 +130,90 @@ rngd-lab/
 ├── uv.lock               # 의존성 잠금 파일
 ├── .python-version       # Python 3.12
 ├── check_env.py          # 실습 환경 확인 스크립트
-└── day1_npu_chat_test/   # Day 1 실습
+├── docs/                 # 환경 구성 문서 (SSH, uv)
+├── day1_npu_chat_test/   # Day 1: 모델 서빙과 API 호출
+├── day2_furiosa_sdk/     # Day 2: Furiosa SDK 직접 추론
+├── day3_npu_api/         # Day 3: OpenAI 호환 API 서버와 챗봇
+├── day4_benchmark_test/  # Day 4: 서빙 성능 측정
+└── day4_fxb_ex/          # Day 4 보충: FXB CLI
 ```
 
 ---
 
-## 6. 실습
+## 6. 실습 흐름
 
-> 실습 내용은 추후 추가 예정입니다.
+모델을 NPU에 올리는 방법을 단계적으로 배운다.
+**서버로 서빙하고 호출 → SDK로 직접 추론 → API 서버와 챗봇 → 성능 측정**
+순서로 진행한다. 각 폴더의 `DAY0N_실습내용.md`에 자세한 절차가 있다.
+
+| Day | 폴더 | 주제 | 핵심 |
+|---|---|---|---|
+| 1 | `day1_npu_chat_test` | 모델 서빙과 API 호출 | `furiosa-llm serve`로 서버를 띄우고 `curl`·`requests`로 호출 |
+| 2 | `day2_furiosa_sdk` | Furiosa SDK 직접 추론 | Python `LLM` 클래스로 모델을 직접 로딩해 추론 |
+| 3 | `day3_npu_api` | API 서버와 챗봇 | OpenAI 호환 서버, SSH 터널, Streaming·Multi-turn 챗봇 |
+| 4 | `day4_benchmark_test` | 서빙 성능 측정 | 동시성·Prefix Caching 벤치마크, 결과 시각화 |
+| 4 보충 | `day4_fxb_ex` | FXB CLI | 컴파일된 NPU 실행 번들(FXB) 조회·검증·빌드 |
+
+### Day 1. 모델 서빙과 API 호출 (`day1_npu_chat_test`)
+
+1. `furiosa-llm serve furiosa-ai/Qwen3-8B-FP8`로 Qwen3-8B 모델 서버를 실행한다.
+   (`--reasoning-parser qwen3`, Thinking 모드 비활성화)
+2. 다른 터미널에서 `watch -n 1 furiosa-smi status`로 NPU 사용량을 관찰한다.
+3. `curl`로 `/v1/chat/completions`를 호출해 추론을 확인한다.
+4. 이미지 입력 모델 `Qwen3-VL-4B-Instruct`로 같은 과정을 반복한다.
+5. `npu_chat_qwen3-8b.py`, `npu_chat_qwen3-VL-4b.py`로 Python에서 호출한다.
+6. `memory_budget.py`로 파라미터 수와 비트 수에 따른 가중치 크기 이론값을 계산한다.
+
+### Day 2. Furiosa SDK 직접 추론 (`day2_furiosa_sdk`)
+
+서버 없이 Python 프로세스가 NPU에 모델을 직접 로딩한다.
+`with LLM(...)` 블록을 벗어나면 NPU 자원이 반환되는 패턴이 핵심이다.
+
+```bash
+uv run 00_preflight.py                                         # 환경·장치 점검
+uv run 01_first_inference.py                                   # 첫 채팅 추론
+uv run 02_batch_inference.py --batch-size 1 --output A_batch1.jsonl   # 배치 추론
+uv run 02_batch_inference.py --batch-size 3 --output B_batch3.jsonl
+uv run 03_sampling_experiment.py                               # 프롬프트·샘플링 비교
+```
+
+한 스크립트가 끝나 NPU를 반환한 뒤 다음 스크립트를 실행한다.
+
+### Day 3. API 서버와 챗봇 (`day3_npu_api`)
+
+모델을 서버에 한 번 올리고 HTTP API로 질문한다.
+
+1. `01_check_server.sh`로 카드 점유, 서빙 옵션, 포트를 점검한다.
+2. `02_run_llm_server.sh`로 조별 카드에 API 서버를 실행한다.
+3. SSH 포트 포워딩(`-L`)으로 PC에서 서버에 연결한다.
+4. `03_api_client.py`: 모델 목록 조회와 일반 Chat Completion
+5. `04_streaming_chat.py`: Single-turn Streaming 챗봇
+6. `05_multiturn_chat.py`: 클라이언트가 대화 이력을 관리하는 Multi-turn 챗봇 (`/reset`, `/exit`)
+
+### Day 4. 서빙 성능 측정 (`day4_benchmark_test`)
+
+Day 3 서버를 그대로 사용해 성능을 측정한다.
+
+```bash
+bash 01_check_npu.sh                  # 카드·서버·메트릭 확인
+uv run python 02_check_metrics.py     # /metrics의 Counter·Gauge·Histogram 확인
+uv run python 03_concurrency_benchmark.py --repeats 3 --max-tokens 64
+uv run python 04_prefix_cache_benchmark.py --mode off --repeats 3   # OFF 서버
+uv run python 04_prefix_cache_benchmark.py --mode on  --repeats 3   # ON 서버
+uv run python 05_visualize_results.py                # summary.csv, 그래프 3개
+uv run streamlit run 06_dashboard.py                 # Streamlit 대시보드
+```
+
+- **동시성:** 동시 요청 1·2·4·8을 각 3회 보내 지연시간(TTFT, E2E)과 처리량을 잰다.
+- **Prefix Caching:** 서버를 `--no-enable-prefix-caching`으로 한 번, 기본값으로 한 번 띄워 같은 공통 문맥 요청의 TTFT를 비교한다. ON에서 Hit Counter가 늘었는지 함께 확인한다.
+- 서버 `/metrics`의 Counter 증가량으로 실제 토큰 수를 계산한다.
+
+### Day 4 보충. FXB CLI (`day4_fxb_ex`)
+
+FXB(Furiosa Executable Bundle)는 모델 가중치와 별개인 컴파일된 NPU 실행 번들이다.
+
+1. `fxb cache ls`로 캐시를 조회하고 공개된 FXB를 내려받는다.
+2. `fxb show`, `fxb inspect`, `fxb check`로 메타데이터와 호환성을 확인한다.
+3. 호환 FXB로 `furiosa-llm serve`를 실행해 API를 검증한다.
+4. `fxb build --dry-run`으로 컴파일 계획을 확인한다. (실제 빌드는 선택)
+5. `hf_fxb_list.py`로 Hugging Face의 `furiosa-ai` 모델 중 `.fxb`가 있는 것을 조회한다.

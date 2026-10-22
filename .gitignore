@@ -224,3 +224,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project outputs / artifacts
+output_/
+day4_fxb_ex/artifacts/
+benchmark-tool-simple/
+benchmark-tool-simple/vllm-result/
